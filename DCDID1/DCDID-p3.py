@@ -1,20 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Sep 17 10:02:42 2018
-
-@author: Dell
+@author: 1912101 Aditya Soni, 1912104 Aditya Agarwal, 1912106 Abhishek Bharadwaj, 1912158 Sourabh Shah, 1912177 Ayesha Nashim
 """
-
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 10 16:41:26 2018
-
-@author: Administrator
-"""
-
-
-
-
 import networkx as nx
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score
@@ -24,76 +11,90 @@ import datetime
 from itertools import count
 from sklearn import metrics
 import math
-import matplotlib.pyplot as plt  # 画图用
+import matplotlib.pyplot as plt  # for drawing
+
+
 def str_to_int(x):
     return [[int(v) for v in line.split()] for line in x]
 
 
-def node_addition(G, addnodes, communitys):  # 输入的communitys社区格式为｛节点：社区名称｝
-    change_comm = set()  # 存放结构可能发现改变的社区标签
-    processed_edges = set()  # 已处理过的边，需要从增加边中删除已处理过的边
+# The input community format is {node: community name}
+def node_addition(G, addnodes, communities):
+    change_comm = set()  # Store community tags that the structure may find changed
+    # processed edges, need to remove processed edges from added edges
+    processed_edges = set()
 
     for u in addnodes:
         neighbors_u = G.neighbors(u)
-        neig_comm = set()  # 邻居所在社区标签
+        neig_comm = set()  # Neighbor's community label
         pc = set()
         for v in neighbors_u:
-            neig_comm.add(communitys[v])
+            neig_comm.add(communities[v])
             pc.add((u, v))
-            pc.add((v, u))  # 无向图中都 是一条边，加两次方便操作
-        if len(neig_comm) > 1:  # 说明此加入结点不在社区内部
+            # There is one edge in the undirected graph, and it is convenient to add two times
+            pc.add((v, u))
+        if len(neig_comm) > 1:  # Indicates that this joining node is not within the community
             change_comm = change_comm | neig_comm
-            lab = max(communitys.values())+1
-            communitys.setdefault(u, lab)  # 为v分配一个社区标签
+            lab = max(communities.values())+1
+            communities.setdefault(u, lab)  # assign a community label to v
             change_comm.add(lab)
         else:
-            if len(neig_comm) == 1:  # 说明结点在社区内部，或只与一个社区连接
-                communitys.setdefault(v, neig_comm[0])  # 将结点加入到本社区
+            # Indicates that the node is inside the community, or only connected to one community
+            if len(neig_comm) == 1:
+                # Add the node to this community
+                communities.setdefault(v, neig_comm[0])
                 processed_edges = processed_edges | pc
             else:
-                # 新加结点未和其它结点有连接，分配新的社区标签
-                communitys.setdefault(v, max(communitys.values())+1)
+                # The newly added node is not connected to other nodes, assign a new community label
+                communities.setdefault(v, max(communities.values())+1)
 
-    return change_comm, processed_edges, communitys  # 返回可能发生变化的社区，处理过的边和最新社区结构。
+    # Returns possibly changed communities, processed edges and latest community structure.
+    return change_comm, processed_edges, communities
 
 
-def node_deletion(G, delnodes, communitys):  # tested, correct
-    change_comm = set()  # 存放结构可能发现改变的社区标签
-    processed_edges = set()  # 已处理过的边，需要从增加边中删除已处理过的边
+def node_deletion(G, delnodes, communities):  # tested, correct
+    change_comm = set()  # Store community tags that the structure may find changed
+    # processed edges, need to remove processed edges from added edges
+    processed_edges = set()
     for u in delnodes:
         neighbors_u = G.neighbors(u)
-        neig_comm = set()  # 邻居所在社区标签
+        neig_comm = set()  # Neighbor's community label
         for v in neighbors_u:
-            neig_comm.add(communitys[v])
+            neig_comm.add(communities[v])
             processed_edges.add((u, v))
             processed_edges.add((v, u))
-        del communitys[u]  # 删除结点和社区
+        del communities[u]  # delete nodes and communities
         change_comm = change_comm | neig_comm
-    return change_comm, processed_edges, communitys  # 返回可能发生变化的社区，处理过的边和最新社区结构。
+    # Returns possibly changed communities, processed edges and latest community structure.
+    return change_comm, processed_edges, communities
 
 
-def edge_addition(addedges, communitys):  # 如果加入边在社区内部，不会引起社区变化则不做处理，否则标记
-    change_comm = set()  # 存放结构可能发现改变的社区标签
-#    print addedges
-#    print communitys
+# If the added edge is inside the community and will not cause community changes, it will not be processed, otherwise it will be marked
+def edge_addition(addedges, communities):
+    change_comm = set()  # Store community tags that the structure may find changed
+# print addedges
+# print communities
     for item in addedges:
-        neig_comm = set()  # 邻居所在社区标签
-        neig_comm.add(communitys[item[0]])  # 判断一边两端的节点所在社区
-        neig_comm.add(communitys[item[1]])
-        if len(neig_comm) > 1:  # 说明此加入边不在社区内部
+        neig_comm = set()  # Neighbor's community label
+        # Determine the community where the nodes at both ends of one side are located
+        neig_comm.add(communities[item[0]])
+        neig_comm.add(communities[item[1]])
+        if len(neig_comm) > 1:  # Indicates that this joining edge is not within the community
             change_comm = change_comm | neig_comm
-    return change_comm  # 返回可能发生变化的社区，
+    return change_comm  # Returns the community that may have changed,
 
 
-def edge_deletion(deledges, communitys):  # 如果删除边在社区内部可能引起社区变化，在社区外部则不会变化
-    change_comm = set()  # 存放结构可能发现改变的社区标签
+# If deleting an edge may cause community changes within the community, it will not change outside the community
+def edge_deletion(deledges, communities):
+    change_comm = set()  # Store community tags that the structure may find changed
     for item in deledges:
-        neig_comm = set()  # 邻居所在社区标签
-        neig_comm.add(communitys[item[0]])  # 判断一边两端的节点所在社区
-        neig_comm.add(communitys[item[1]])
-        if len(neig_comm) == 1:  # 说明此加入边不在社区内部
+        neig_comm = set()  # Neighbor's community label
+        # Determine the community where the nodes at both ends of one side are located
+        neig_comm.add(communities[item[0]])
+        neig_comm.add(communities[item[1]])
+        if len(neig_comm) == 1:  # Indicates that this joining edge is not within the community
             change_comm = change_comm | neig_comm
-    return change_comm  # 返回可能发生变化的社区
+    return change_comm  # Returns the community that may have changed
 
 
 def getchangegraph(all_change_comm, newcomm, Gt):
@@ -111,12 +112,12 @@ def getchangegraph(all_change_comm, newcomm, Gt):
     return Gte
 
 
-def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行信息动力学,maxlabel为未改变社区结构的最大标签
+def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on subgraphs that may change the structure, maxlabel is the maximum label that does not change the community structure
 
     # initial information
     Neigb = {}
     info = 0
-    # 平均度、最大度
+    # average degree, maximum degree
     avg_d = 0
     max_deg = 0
     N = Gsub.number_of_nodes()
@@ -125,25 +126,25 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
     avg_d = sum(deg.values()) * 1.0 / N
 
     ti = 1
-    list_I = {}  # 存放各节点信息，初始为各节点度，每次迭代不断动态变化
+    list_I = {}  # Store the information of each node, the initial is the degree of each node, and each iteration continues to change dynamically
     maxinfo = 0
     starttime = datetime.datetime.now()
     for v in Gsub.nodes():
         if deg[v] == max_deg:
             info_t = 1 + ti * 0
             ti = ti + 1
-#            print v,max_deg,info_t
+# print v,max_deg,info_t
             maxinfo = info_t
         else:
             info_t = deg[v] * 1.0 / max_deg
             # info_t=round(random.uniform(0,1),3)
-        #    info_t=deg[v]*1.0/max_deg
+        # info_t=deg[v]*1.0/max_deg
         list_I.setdefault(v, info_t)
-        Neigb.setdefault(v, Gsub.neighbors(v))  # 节点v的邻居结点
+        Neigb.setdefault(v, Gsub.neighbors(v))  # Neighbors of node v
         info += info_t
     node_order = sorted(list_I.items(), key=lambda t: t[1], reverse=True)
     node_order_list = list(zip(*node_order))[0]
-    # 计算节点间相似度， 杰卡德系数
+    # Calculate the similarity between nodes, the Jaccard coefficient
 
     def sim_jkd(u, v):
         list_v = Gsub.neighbors(v)
@@ -154,7 +155,7 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
         s = set(list_u)
 
         return len(s & t) * 1.0 / len(s | t)
-    # 计算节点间hop2数
+    # Calculate the number of hop2 between nodes
 
     def hop2(u, v):
         list_v = (Neigb[v])
@@ -163,12 +164,13 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
         s = set(list_u)
         return len(s & t)
 
-    st = {}  # 存放相似度
-    hops = {}  # 存放hop2数
-    hop2v = {}  # 存放hop2数比值
-    sum_s = {}  # 存放各节点邻居相似度之和
-    avg_sn = {}  # 存放各节点的局部平均相似度，局部指的是在邻居节点
-    avg_dn = {}  # 存放各节点的局部平均度
+    st = {}  # store the similarity
+    hops = {}  # store hop2 number
+
+    hop2v = {}  # Store the ratio of hop2 numbers
+    sum_s = {}  # Store the sum of the neighbor similarity of each node
+    avg_sn = {}  # Store the local average similarity of each node, local refers to the neighbor nodes
+    avg_dn = {}  # Store the local average degree of each node
 
     for v, Iv in list_I.items():
         sum_v = 0
@@ -189,7 +191,7 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
                 else:
                     hop2v.setdefault(keys, 0)
             else:
-                hop2v.setdefault(keys, h2 / tri)
+                hop2v.setdefault(keys, h2/tri)
 
             sum_v += p
             sum_deg += deg[u]
@@ -197,9 +199,9 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
         sum_s.setdefault(v, sum_v)
         avg_sn.setdefault(v, sum_v * 1.0 / num_v)
         avg_dn.setdefault(v, sum_deg * 1.0 / (num_v + 1))
-#    print('begin loop')
+# print('begin loop')
 
-#    oldinfo = 0
+# oldinfo = 0
     info = 0
     t = 0
     while 1:
@@ -216,27 +218,27 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
 
                 Iu = list_I[u]
                 if Iu - Iv < 0:
-                    #                           It=It*1.0/E
+                    # It=It*1.0/E
                     It = 0
                 else:
                     It = (math.exp(Iu - Iv) - 1)
                 # It=It*1.0*deg[u]/(deg[v]+deg[u])
                 if It < 0.0001:
-                    It = 0  #
+                    It = 0
                 fuv = It
-                #                       print(fuv)
+                # print(fuv)
                 p = st[keys]
                 p1 = p * hop2v[keys]
-                Iin = p1 * fuv  #
+                Iin = p1 * fuv
                 Icost = avg_sn[v] * fuv * (1 - p) / avg_dn[v]
-                #                Icost=avg_s*fuv*avg_c/avg_d
-                #                Icost=(avg_sn[v])*fuv/avg_dn[v]
+                # Icost=avg_s*fuv*avg_c/avg_d
+                # Icost=(avg_sn[v])*fuv/avg_dn[v]
 
                 Iin = Iin - Icost
                 if Iin < 0:
                     Iin = 0
                 Iv = Iv + Iin
-                #                       print(v,u,Iin,Icost,Iv,Iu,It)
+                # print(v,u,Iin,Icost,Iv,Iu,It)
                 if Iin > Imax:
                     Imax = Iin
 
@@ -246,14 +248,14 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
             # print(v,u,Iin,Iv,Iu,tempu[0],pu,tempu[1],fuv)
             info += list_I[v]
         # if v==3:
-        #                print(v,Iv)
+        # print(v,Iv)
 
         if Imax < 0.0001:
             break
 
     endtime = datetime.datetime.now()
-#    print ('time:', (endtime - starttime).seconds)
-# 社团划分**************************************************************
+# print ('time:', (endtime - starttime).seconds)
+# Group division ************************************************ ****************
 
     queue = []
     order = []
@@ -279,19 +281,20 @@ def CDID(Gsub, maxlabel):  # G_sub为子图,对可能改变结构的子图运行
         if number == N:
             break
 
-            #    print (order)
-            #    print(community)
+            # print (order)
+            # print(community)
     order_value = [community[k] for k in sorted(community.keys())]
-    commu_num = len(set(order_value))  # 社团数量
+    commu_num = len(set(order_value))  # number of communities
     endtime1 = datetime.datetime.now()
-    print('社团划分结束')
+    print('Social division ends')
     print(list_I)
     # print('community number:', commu_num)
     print('alltime:', (endtime1 - starttime).seconds)
     return community
 
 
-def conver_comm_to_lab(comm1):  # 转换社区格式为，标签为主键，节点为value
+# Convert community format to, label as primary key, node as value
+def conver_comm_to_lab(comm1):
     overl_community = {}
     for node_v, com_lab in comm1.items():
         if com_lab in overl_community.keys():
@@ -304,10 +307,12 @@ def conver_comm_to_lab(comm1):  # 转换社区格式为，标签为主键，节�
 def getscore(comm_va, comm_list):
     actual = []
     baseline = []
-    for j in range(len(comm_va)):  # groundtruth，j代表每个社区,j为社区名称
-        for c in comm_va[j]:  # 社区中的每个节点，代表各节点
+    # groundtruth, j represents each community, j is the community name
+    for j in range(len(comm_va)):
+        for c in comm_va[j]:  # Each node in the community, representing each node
             flag = False
-            for k in range(len(comm_list)):  # 检测到的社区，k为社区名称
+            # The detected community, k is the community name
+            for k in range(len(comm_list)):
                 if c in comm_list[k] and flag == False:
                     flag = True
                     actual.append(j)
@@ -323,7 +328,7 @@ def drawcommunity(g, partition, filepath):
     t = 0
     node_color = ['#66CCCC', '#FFCC00', '#99CC33', '#CC6600', '#CCCC66',
                   '#FF99CC', '#66FFFF', '#66CC66', '#CCFFFF', '#CCCC00', '#CC99CC', '#FFFFCC']
-#    print(node_color[1])
+# print(node_color[1])
 
     for com in set(partition.values()):
         count1 = count1 + 1.
@@ -339,8 +344,8 @@ def drawcommunity(g, partition, filepath):
     plt.show()
 
 
-############################################################
-# ----------main-----------------
+################################################## ##########
+# ------------main-----------------
 edges_added = set()
 edges_removed = set()
 nodes_added = set()
@@ -350,7 +355,7 @@ G = nx.Graph()
 # Edge Path
 edge_file = '15node_trial.txt'
 # Path to the directory
-path = 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/test1/'
+path = 'DCDID1/data/test1/'
 # Adding nodes to the graph with edges
 with open(path+edge_file, 'r') as f:
 
@@ -364,9 +369,9 @@ G = G.to_undirected()
 
 # initial graph
 
-print('Time Slice NetworkG0*********************************************')
+print('Time Slice NetworkG0******************************************** *')
 nx.draw_networkx(G)
-fpath = 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/pic/G_0.png'
+fpath = 'DCDID1/data/pic/G_0.png'
 plt.savefig(fpath)
 # Output method 1: save the image as a png format image file
 plt.show()
@@ -379,7 +384,7 @@ with open(path+comm_file, 'r') as f:
 comm = {}  # Used to store the detected community structure in the format {node: community label}
 comm = CDID(G, 0)  # initial community
 # drawing community
-print('Community C0 of T0 time slice*********************************************')
+print('Community C0 of T0 time slice******************************************** ****')
 drawcommunity(
     G, comm, 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/pic/community_0.png')
 initcomm = conver_comm_to_lab(comm)
@@ -394,128 +399,129 @@ filename = '15node_'
 for i in range(2, 5):
     print('begin loop:', i-1)
     # comm_new_file=open(path+'output_new_'+str(i)+'.txt','r')
-#    comm_new_file=open(path+filename+str(i)+'.comm','r')
+# comm_new_file=open(path+filename+str(i)+'.comm','r')
     comm_new_file = open(path+filename+'comm_t0'+str(i)+'.txt', 'r')
     if i < 10:
-        #        edge_list_old_file=open(path+'switch.t0'+str(i-1)+'.edges','r')
-        #        edge_list_old=edge_list_old_file.readlines()
-        #        edge_list_new_file=open(path+filename+str(i)+'.edges','r')
+        # edge_list_old_file=open(path+'switch.t0'+str(i-1)+'.edges','r')
+        # edge_list_old=edge_list_old_file.readlines()
+        # edge_list_new_file=open(path+filename+str(i)+'.edges','r')
         edge_list_new_file = open(path+filename+'t0'+str(i)+'.txt', 'r')
         edge_list_new = edge_list_new_file.readlines()
         comm_new = comm_new_file.readlines()
     elif i == 10:
-        #        edge_list_old_file=open(path+'switch.t09.edges','r')
-        #        edge_list_old=edge_list_old_file.readlines()
+        # edge_list_old_file=open(path+'switch.t09.edges','r')
+        # edge_list_old=edge_list_old_file.readlines()
         edge_list_new_file = open(path+'switch.t10.edges', 'r')
         edge_list_new = edge_list_new_file.readlines()
         comm_new = comm_new_file.readlines()
     else:
-        #        edge_list_old_file=open(path+'switch.t'+str(i-1)+'.edges','r')
-        #        edge_list_old=edge_list_old_file.readlines()
+        # edge_list_old_file=open(path+'switch.t'+str(i-1)+'.edges','r')
+        # edge_list_old=edge_list_old_file.readlines()
         edge_list_new_file = open(path+'switch.t'+str(i)+'.edges', 'r')
         edge_list_new = edge_list_new_file.readlines()
         comm_new = comm_new_file.readlines()
     comm_new = str_to_int(comm_new)
 
-#    for line in edge_list_old:
-#         temp = line.strip().split()
+# for line in edge_list_old:
+# temp = line.strip().split()
 #
-#         G1.add_edge(int(temp[0]),int(temp[1]))
+# G1.add_edge(int(temp[0]),int(temp[1]))
     for line in edge_list_new:
         temp = line.strip().split()
         G2.add_edge(int(temp[0]), int(temp[1]))
-    print('T'+str(i-1)+'time slice network G'+str(i-1) +'*********************************************')
+    print('T'+str(i-1)+'time slice network G'+str(i-1) + '********************** ************************')
     nx.draw_networkx(G2)
-    fpath = 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/pic/G_' + \
+    fpath = 'DCDID1/data/pic/G_' + \
         str(i-1)+'.png'
-    plt.savefig(fpath)  #Output method 1: save the image as a png format image file
+    # Output method 1: save the image as a png format image file
+    plt.savefig(fpath)
     plt.show()
-#    total_nodes = previous_nodes.union(current_nodes)#当前时间片和上一时间片总节点数，两集合相关
+# total_nodes = previous_nodes.union(current_nodes)#The total number of nodes in the current time slice and the previous time slice, the two sets are related
     total_nodes = set(G1.nodes()) | set(G2.nodes())
-#    current_nodes.add(1002)
-#    previous_nodes.add(1001)
+# current_nodes.add(1002)
+# previous_nodes.add(1001)
 
     nodes_added = set(G2.nodes())-set(G1.nodes())
-    print('增加节点集为：', nodes_added)
+    print('Add node set to: ', nodes_added)
     nodes_removed = set(G1.nodes())-set(G2.nodes())
-    print('删除节点集为：', nodes_removed)
-#    print ('G2',G2.nodes())
-#    print ('G1',G1.nodes())
-#    print ('add node',nodes_added)
-#    print ('remove node',nodes_removed)
+    print('Remove node set as:', nodes_removed)
+# print ('G2', G2.nodes())
+# print ('G1', G1.nodes())
+# print ('add node',nodes_added)
+# print ('remove node',nodes_removed)
     edges_added = set(G2.edges())-set(G1.edges())
-    print('增加边集为：', edges_added)
+    print('Added edge set is: ', edges_added)
     edges_removed = set(G1.edges())-set(G2.edges())
-    print('删除边集为：', edges_removed)
-#    print ('add edges',edges_added)
-#    print ('remove edges',edges_removed)
-#    print len(G1.edges())
-#    print len(edges_added),len(edges_removed)
+    print('Delete edge set: ', edges_removed)
+# print ('add edges',edges_added)
+# print ('remove edges',edges_removed)
+# print len(G1.edges())
+# print len(edges_added), len(edges_removed)
     all_change_comm = set()
-    #添加结点处理#############################################################
+    #Add node processing ############################################## ################
     addn_ch_comm, addn_pro_edges, addn_commu = node_addition(
         G2, nodes_added, comm)
-#    print ('addnode_community',addn_commu)
-#    print edges_added
-#    print addn_pro_edges
-    edges_added = edges_added-addn_pro_edges  # 去掉已处理的边
-#    print edges_added
+# print ('addnode_community',addn_commu)
+# print edges_added
+# print addn_pro_edges
+    edges_added = edges_added-addn_pro_edges # remove processed edges
+# print edges_added
     all_change_comm = all_change_comm | addn_ch_comm
-#    print('addn_ch_comm',addn_ch_comm)
+# print('addn_ch_comm',addn_ch_comm)
 
-    #删除结点处理#############################################################
-#    print('nodes_removed',nodes_removed)
+    #Delete node processing ############################################## ################
+# print('nodes_removed',nodes_removed)
     deln_ch_comm, deln_pro_edges, deln_commu = node_deletion(
         G1, nodes_removed, addn_commu)
     all_change_comm = all_change_comm | deln_ch_comm
     edges_removed = edges_removed-deln_pro_edges
-#    print('deln_ch_comm',deln_ch_comm)
-#    print ('delnode_community',deln_commu)
-    #添加边处理#############################################################
-#    print('edges_added',edges_added)
+# print('deln_ch_comm',deln_ch_comm)
+# print ('delnode_community',deln_commu)
+    #Add edge processing ############################################## ###############
+# print('edges_added',edges_added)
     adde_ch_comm = edge_addition(edges_added, deln_commu)
     all_change_comm = all_change_comm | adde_ch_comm
-#    print('all_change_comm',all_change_comm)
-    #删除边处理#############################################################
+# print('all_change_comm',all_change_comm)
+    #delete edge processing ############################################## ###############
     dele_ch_comm = edge_deletion(edges_removed, deln_commu)
     all_change_comm = all_change_comm | dele_ch_comm
-#    print('all_change_comm',all_change_comm)
-    unchangecomm = ()  # 未改变的社区标签
-    newcomm = {}  # 格式为｛节点：社区｝
-    newcomm = deln_commu  # 添加边和删除边，只是在现有节点上处理，不会新增节点，删除节点（前面已处理）
+# print('all_change_comm',all_change_comm)
+    unchangecomm = () # Unchanged community tag
+    newcomm = {} # The format is {node:community}
+    newcomm = deln_commu # Add edges and delete edges, just process on existing nodes, no new nodes will be added, nodes will be deleted (previously processed)
     unchangecomm = set(newcomm.values())-all_change_comm
     unchcommunity = {key: value for key, value in newcomm.items(
-    ) if value in unchangecomm}  # 未改变的社区 ：标签和结点
-    # 找出变化社区所对应的子图，然后对子图运用信息动力学找出新的社区结构，加上未改变的社区结构，得到新的社区结构。
-#    print('change community:',all_change_comm)
+    ) if value in unchangecomm} # unchanged community : tags and nodes
+    # Find the subgraph corresponding to the changed community, then use information dynamics on the subgraph to find the new community structure, add the unchanged community structure, and get the new community structure.
+# print('change community:',all_change_comm)
     Gtemp = nx.Graph()
     Gtemp = getchangegraph(all_change_comm, newcomm, G2)
     unchagecom_maxlabe = 0
     if len(unchangecomm) > 0:
         unchagecom_maxlabe = max(unchangecomm)
-#    print('subG',Gtemp.edges())
-    if Gtemp.number_of_edges() < 1:  # 社区未发生变化
+# print('subG', Gtemp.edges())
+    if Gtemp.number_of_edges() < 1: # community has not changed
         comm = newcomm
     else:
         getnewcomm = CDID(Gtemp, unchagecom_maxlabe)
-        print('T'+str(i-1)+'时间片子图delta_g'+str(i-1) +
-              '*********************************************')
+        print('T'+str(i-1)+'time slice delta_g'+str(i-1) +
+              '************************************************')
         nx.draw_networkx(Gtemp)
-        fpath = 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/pic/delta_g' + \
+        fpath = 'DCDID1/data/pic/delta_g' + \
             str(i-1)+'.png'
         plt.savefig(fpath)
         plt.show()
 
-#        print('newcomm',getnewcomm)
-        # 合并社区结构，未改的加上新获得的
-#        mergecomm=dict(unchcommunity, **getnewcomm )#格式为｛节点：社区｝
+# print('newcomm', getnewcomm)
+        # Merge community structure, unchanged plus newly acquired
+# mergecomm=dict(unchcommunity, **getnewcomm )#The format is {node:community}
         d = dict(unchcommunity)
         d.update(getnewcomm)
-        comm = dict(d)  # 把当前获得的社区结构，作为下一次的社区输入
-        print('T'+str(i-1)+'时间片的网络社团结构C'+str(i-1) +
-              '*********************************************')
-        drawcommunity(G2, comm, './data/pic/community_'+str(i-1)+'.png')
-#    print ('getcommunity:',conver_comm_to_lab(comm))
+        comm = dict(d) # Take the currently obtained community structure as the next community input
+        print('T'+str(i-1)+'time slice network community structure C'+str(i-1) +
+              '************************************************')
+        drawcommunity(G2, comm, 'DCDID1/data/pic/community_'+str(i-1)+'.png')
+# print ('getcommunity:',conver_comm_to_lab(comm))
     getscore(list(conver_comm_to_lab(comm).values()), comm_new)
     print('community number:', len(set(comm.values())))
     print(comm)
