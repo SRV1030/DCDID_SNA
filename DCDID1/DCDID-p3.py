@@ -118,25 +118,32 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
     Neigb = {}
     info = 0
     # average degree, maximum degree
-    avg_d = 0
+    # avg_d = 0
     max_deg = 0
     N = Gsub.number_of_nodes()
-    deg = Gsub.degree()
-    max_deg = max(deg.values())
-    avg_d = sum(deg.values()) * 1.0 / N
+    deg =[] 
+    deg2=Gsub.degree()
+    for d in  Gsub.degree():
+        deg.append(d[1])
+
+    max_deg = max(deg)
+    print("//////degrees")
+    print(max_deg)
+    print(deg)
+    # avg_d = sum(deg) * 1.0 / N
 
     ti = 1
     list_I = {}  # Store the information of each node, the initial is the degree of each node, and each iteration continues to change dynamically
     maxinfo = 0
     starttime = datetime.datetime.now()
     for v in Gsub.nodes():
-        if deg[v] == max_deg:
+        if deg2[v] == max_deg:
             info_t = 1 + ti * 0
             ti = ti + 1
 # print v,max_deg,info_t
             maxinfo = info_t
         else:
-            info_t = deg[v] * 1.0 / max_deg
+            info_t = deg2[v] * 1.0 / max_deg
             # info_t=round(random.uniform(0,1),3)
         # info_t=deg[v]*1.0/max_deg
         list_I.setdefault(v, info_t)
@@ -177,8 +184,8 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
         sum_deg = 0
         tri = nx.triangles(Gsub, v) * 1.0
         listv = Neigb[v]
-        num_v = len(listv)
-        sum_deg += deg[v]
+        num_v = len(list(listv))
+        sum_deg += deg2[v]
 
         for u in listv:
             keys = str(v) + '_' + str(u)
@@ -186,7 +193,7 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
             h2 = hop2(v, u)
             hops.setdefault(keys, h2)
             if tri == 0:
-                if deg[v] == 1:
+                if deg2[v] == 1:
                     hop2v.setdefault(keys, 1)
                 else:
                     hop2v.setdefault(keys, 0)
@@ -194,14 +201,14 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
                 hop2v.setdefault(keys, h2/tri)
 
             sum_v += p
-            sum_deg += deg[u]
+            sum_deg += deg2[u]
 
         sum_s.setdefault(v, sum_v)
         avg_sn.setdefault(v, sum_v * 1.0 / num_v)
         avg_dn.setdefault(v, sum_deg * 1.0 / (num_v + 1))
-# print('begin loop')
+    # print('begin loop')
 
-# oldinfo = 0
+    # oldinfo = 0
     info = 0
     t = 0
     while 1:
@@ -254,8 +261,8 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
             break
 
     endtime = datetime.datetime.now()
-# print ('time:', (endtime - starttime).seconds)
-# Group division ************************************************ ****************
+    # print ('time:', (endtime - starttime).seconds)
+    # Group division ************************************************ ****************
 
     queue = []
     order = []
@@ -326,20 +333,18 @@ def drawcommunity(g, partition, filepath):
     pos = nx.spring_layout(g)
     count1 = 0
     t = 0
-    node_color = ['#66CCCC', '#FFCC00', '#99CC33', '#CC6600', '#CCCC66',
-                  '#FF99CC', '#66FFFF', '#66CC66', '#CCFFFF', '#CCCC00', '#CC99CC', '#FFFFCC']
-# print(node_color[1])
 
     for com in set(partition.values()):
         count1 = count1 + 1.
-        list_nodes = [nodes for nodes in partition.keys()
-                      if partition[nodes] == com]
-        nx.draw_networkx_nodes(
-            g, pos, list_nodes, node_size=220, node_color=node_color[t])
+        list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
+        print(list_nodes)
+        nx.draw_networkx_nodes(g, pos, list_nodes, node_size=220)
         nx.draw_networkx_labels(g, pos)
         t = t+1
-
-    nx.draw_networkx_edges(g, pos, with_labels=True, alpha=0.5)
+    
+    labels = nx.get_edge_attributes(g,'weight')
+    nx.draw_networkx_labels(g,pos)
+    nx.draw_networkx_edges(g, pos,alpha=0.5)
     plt.savefig(filepath)
     plt.show()
 
@@ -353,7 +358,7 @@ nodes_removed = set()
 G = nx.Graph()
 
 # Edge Path
-edge_file = '15node_trial.txt'
+edge_file = '15node_t04.txt'
 # Path to the directory
 path = 'DCDID1/data/test1/'
 # Adding nodes to the graph with edges
@@ -377,7 +382,7 @@ plt.savefig(fpath)
 plt.show()
 # print G.edges()
 # comm_file='switch.t01.comm'
-comm_file = '15node_comm_trial.txt'
+comm_file = '15node_comm_t04.txt'
 with open(path+comm_file, 'r') as f:
     comm_list = f.readlines()
     comm_list = str_to_int(comm_list)
@@ -385,8 +390,8 @@ comm = {}  # Used to store the detected community structure in the format {node:
 comm = CDID(G, 0)  # initial community
 # drawing community
 print('Community C0 of T0 time slice******************************************** ****')
-drawcommunity(
-    G, comm, 'C:/Users/ayesh/Downloads/DCDID2/DCDID1/data/pic/community_0.png')
+print(comm)
+drawcommunity(G, comm, 'DCDID1/data/pic/community_0.png')
 initcomm = conver_comm_to_lab(comm)
 comm_va = list(initcomm.values())
 getscore(comm_va, comm_list)
@@ -459,8 +464,7 @@ for i in range(2, 5):
 # print len(edges_added), len(edges_removed)
     all_change_comm = set()
     #Add node processing ############################################## ################
-    addn_ch_comm, addn_pro_edges, addn_commu = node_addition(
-        G2, nodes_added, comm)
+    addn_ch_comm, addn_pro_edges, addn_commu = node_addition(G2, nodes_added, comm)
 # print ('addnode_community',addn_commu)
 # print edges_added
 # print addn_pro_edges
