@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-@author: 1912101 Aditya Soni, 1912104 Aditya Agarwal, 1912106 Abhishek Bharadwaj, 1912158 Sourabh Shah, 1912177 Ayesha Nashim
+@author: 1912101 Aditya Soni, 1912104 Aditya Agarwal, 1912106 Abhishek Bharadwaz, 
+1912158 Sourabh Shah, 1912177 Ayesha Nasim
 """
 import networkx as nx
 from sklearn.metrics.cluster import normalized_mutual_info_score
@@ -12,6 +13,7 @@ from itertools import count
 from sklearn import metrics
 import math
 import matplotlib.pyplot as plt  # for drawing
+import random
 
 
 def str_to_int(x):
@@ -338,7 +340,9 @@ def drawcommunity(g, partition, filepath):
         count1 = count1 + 1.
         list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
         print(list_nodes)
-        nx.draw_networkx_nodes(g, pos, list_nodes, node_size=220)
+        r = lambda: random.randint(0,255)
+        color = '#{:02x}{:02x}{:02x}'.format(r(), r(), r())
+        nx.draw_networkx_nodes(g, pos, list_nodes, node_size=220,node_color=color)
         nx.draw_networkx_labels(g, pos)
         t = t+1
     
@@ -358,7 +362,7 @@ nodes_removed = set()
 G = nx.Graph()
 
 # Edge Path
-edge_file = '15node_t04.txt'
+edge_file = '15node_t01.txt'
 # Path to the directory
 path = 'DCDID1/data/test1/'
 # Adding nodes to the graph with edges
