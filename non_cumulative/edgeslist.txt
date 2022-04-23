@@ -1,0 +1,17 @@
+1960_1963_edges_author.txt
+1963_1966_edges_author.txt
+1966_1969_edges_author.txt
+1969_1972_edges_author.txt
+1972_1975_edges_author.txt
+1975_1978_edges_author.txt
+1978_1981_edges_author.txt
+1981_1984_edges_author.txt
+1984_1987_edges_author.txt
+1987_1990_edges_author.txt
+1990_1993_edges_author.txt
+1993_1996_edges_author.txt
+1996_1999_edges_author.txt
+1999_2002_edges_author.txt
+2002_2005_edges_author.txt
+2005_2008_edges_author.txt
+2008_2011_edges_author.txt

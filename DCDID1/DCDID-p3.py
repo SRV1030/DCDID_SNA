@@ -15,102 +15,83 @@ import math
 import matplotlib.pyplot as plt  # for drawing
 import random
 
+def str_to_int (x):
+    return [[int (v) for v in line.split ()] for line in x]
 
-def str_to_int(x):
-    return [[int(v) for v in line.split()] for line in x]
-
-
-# The input community format is {node: community name}
-def node_addition(G, addnodes, communities):
-    change_comm = set()  # Store community tags that the structure may find changed
-    # processed edges, need to remove processed edges from added edges
-    processed_edges = set()
-
+def node_addition (G, addnodes, communitys): # Imported communities Company district format {node: company district name}
+    change_comm = set () # Can be unrestricted.
+    processed_edges = set () # Processed edge
+    
     for u in addnodes:
-        neighbors_u = G.neighbors(u)
-        neig_comm = set()  # Neighbor's community label
-        pc = set()
+        neighbors_u = G.neighbors (u)
+        neig_comm = set () # Label of the company where you live
+        pc = set ()
         for v in neighbors_u:
-            neig_comm.add(communities[v])
-            pc.add((u, v))
-            # There is one edge in the undirected graph, and it is convenient to add two times
-            pc.add((v, u))
-        if len(neig_comm) > 1:  # Indicates that this joining node is not within the community
-            change_comm = change_comm | neig_comm
-            lab = max(communities.values())+1
-            communities.setdefault(u, lab)  # assign a community label to v
-            change_comm.add(lab)
-        else:
-            # Indicates that the node is inside the community, or only connected to one community
-            if len(neig_comm) == 1:
-                # Add the node to this community
-                communities.setdefault(v, neig_comm[0])
-                processed_edges = processed_edges | pc
-            else:
-                # The newly added node is not connected to other nodes, assign a new community label
-                communities.setdefault(v, max(communities.values())+1)
+            neig_comm.add (communitys[v])
+            pc.add ((u, v))
+            pc.add ((v, u)) #undirected
+        if len (neig_comm)> 1: #Explanation Inside the company district where this joining point is absent
+           change_comm = change_comm | neig_comm
+           lab = max (communitys.values()) +1
+           communitys.setdefault (u, lab) #
+           change_comm.add (lab)
+        else: 
+            if len (neig_comm) == 1: # Explanation Concluding point Inside the company district, or connecting with one company district
+               communitys.setdefault (v, neig_comm [0])
+               processed_edges = processed_edges | pc
+            else: 
+               communitys.setdefault(v,max(communitys.values())+1)
+    
+    return change_comm, processed_edges, communitys # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
 
-    # Returns possibly changed communities, processed edges and latest community structure.
-    return change_comm, processed_edges, communities
-
-
-def node_deletion(G, delnodes, communities):  # tested, correct
-    change_comm = set()  # Store community tags that the structure may find changed
-    # processed edges, need to remove processed edges from added edges
-    processed_edges = set()
+def node_deletion (G, delnodes, communitys): #tested, correct
+    change_comm = set () # Can be unrestricted.
+    processed_edges = set () # Processed edge
     for u in delnodes:
-        neighbors_u = G.neighbors(u)
-        neig_comm = set()  # Neighbor's community label
+        neighbors_u = G.neighbors (u)
+        neig_comm = set () # Label of the company where you live
         for v in neighbors_u:
-            neig_comm.add(communities[v])
-            processed_edges.add((u, v))
-            processed_edges.add((v, u))
-        del communities[u]  # delete nodes and communities
+            neig_comm.add (communitys [v])
+            processed_edges.add ((u, v))
+            processed_edges.add ((v, u))
+        del communitys [u]
         change_comm = change_comm | neig_comm
-    # Returns possibly changed communities, processed edges and latest community structure.
-    return change_comm, processed_edges, communities
+    return change_comm, processed_edges,communitys # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
 
-
-# If the added edge is inside the community and will not cause community changes, it will not be processed, otherwise it will be marked
-def edge_addition(addedges, communities):
-    change_comm = set()  # Store community tags that the structure may find changed
+def edge_addition (addedges, communitys): #Inside the company ward where you join the 边, the non-meeting company ward transformation
+    change_comm = set () # Can be unrestricted.
 # print addedges
-# print communities
+#print communitys
     for item in addedges:
-        neig_comm = set()  # Neighbor's community label
-        # Determine the community where the nodes at both ends of one side are located
-        neig_comm.add(communities[item[0]])
-        neig_comm.add(communities[item[1]])
-        if len(neig_comm) > 1:  # Indicates that this joining edge is not within the community
-            change_comm = change_comm | neig_comm
-    return change_comm  # Returns the community that may have changed,
+        neig_comm = set () # Label of the company where you live
+        neig_comm.add (communitys[item [0]]) # Judgment
+        neig_comm.add (communitys[item [1]])
+        if len (neig_comm)> 1: #Explanation Inside the company district where this member is absent
+           change_comm = change_comm | neig_comm
+    return change_comm # Returnable Develop transformational company district,
 
-
-# If deleting an edge may cause community changes within the community, it will not change outside the community
-def edge_deletion(deledges, communities):
-    change_comm = set()  # Store community tags that the structure may find changed
+def edge_deletion (deledges, communitys): #Deletion of the company district that can be used inside the company district
+    change_comm = set () # Can be unrestricted.
     for item in deledges:
-        neig_comm = set()  # Neighbor's community label
-        # Determine the community where the nodes at both ends of one side are located
-        neig_comm.add(communities[item[0]])
-        neig_comm.add(communities[item[1]])
-        if len(neig_comm) == 1:  # Indicates that this joining edge is not within the community
-            change_comm = change_comm | neig_comm
-    return change_comm  # Returns the community that may have changed
+        neig_comm = set () # Label of the company where you live
+        neig_comm.add (communitys[item [0]]) # Judgment
+        neig_comm.add (communitys[item [1]])
+        if len (neig_comm) == 1: #Explanation Inside the company district where this member is absent
+           change_comm = change_comm | neig_comm
+    return change_comm # Returnable
 
-
-def getchangegraph(all_change_comm, newcomm, Gt):
-    Gte = nx.Graph()
-    com_key = newcomm.keys()
-    for v in Gt.nodes():
-        if v not in com_key or newcomm[v] in all_change_comm:
-            Gte.add_node(v)
-            neig_v = Gt.neighbors(v)
+def getchangegraph (all_change_comm, newcomm, Gt):
+    Gte = nx.Graph ()
+    com_key = newcomm.keys ()
+    for v in Gt.nodes ():
+        if v not in com_key or newcomm [v] in all_change_comm:
+            Gte.add_node (v)
+            neig_v = Gt.neighbors (v)
             for u in neig_v:
-                if u not in com_key or newcomm[u] in all_change_comm:
-                    Gte.add_edge(v, u)
-                    Gte.add_node(u)
-
+               if u not in com_key or newcomm [u] in all_change_comm:
+                   Gte.add_edge (v, u)
+                   Gte.add_node (u)
+    
     return Gte
 
 
@@ -120,36 +101,29 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
     Neigb = {}
     info = 0
     # average degree, maximum degree
-    # avg_d = 0
+    avg_d = 0
     max_deg = 0
     N = Gsub.number_of_nodes()
-    deg =[] 
-    deg2=Gsub.degree()
-    for d in  Gsub.degree():
-        deg.append(d[1])
-
-    max_deg = max(deg)
-    print("//////degrees")
-    print(max_deg)
-    print(deg)
-    # avg_d = sum(deg) * 1.0 / N
+    deg = Gsub.degree()
+    max_deg = max(dict(deg).values())
+    avg_d = sum(dict(deg).values()) * 1.0 / N
 
     ti = 1
     list_I = {}  # Store the information of each node, the initial is the degree of each node, and each iteration continues to change dynamically
     maxinfo = 0
     starttime = datetime.datetime.now()
     for v in Gsub.nodes():
-        if deg2[v] == max_deg:
+        if deg[v] == max_deg:
             info_t = 1 + ti * 0
             ti = ti + 1
 # print v,max_deg,info_t
             maxinfo = info_t
         else:
-            info_t = deg2[v] * 1.0 / max_deg
+            info_t = deg[v] * 1.0 / max_deg
             # info_t=round(random.uniform(0,1),3)
         # info_t=deg[v]*1.0/max_deg
         list_I.setdefault(v, info_t)
-        Neigb.setdefault(v, Gsub.neighbors(v))  # Neighbors of node v
+        Neigb.setdefault(v, Gsub.neighbors(v))  # The neighbor node of node v
         info += info_t
     node_order = sorted(list_I.items(), key=lambda t: t[1], reverse=True)
     node_order_list = list(zip(*node_order))[0]
@@ -175,7 +149,6 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
 
     st = {}  # store the similarity
     hops = {}  # store hop2 number
-
     hop2v = {}  # Store the ratio of hop2 numbers
     sum_s = {}  # Store the sum of the neighbor similarity of each node
     avg_sn = {}  # Store the local average similarity of each node, local refers to the neighbor nodes
@@ -187,7 +160,7 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
         tri = nx.triangles(Gsub, v) * 1.0
         listv = Neigb[v]
         num_v = len(list(listv))
-        sum_deg += deg2[v]
+        sum_deg += deg[v]
 
         for u in listv:
             keys = str(v) + '_' + str(u)
@@ -195,22 +168,22 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
             h2 = hop2(v, u)
             hops.setdefault(keys, h2)
             if tri == 0:
-                if deg2[v] == 1:
+                if deg[v] == 1:
                     hop2v.setdefault(keys, 1)
                 else:
                     hop2v.setdefault(keys, 0)
             else:
-                hop2v.setdefault(keys, h2/tri)
+                hop2v.setdefault(keys, h2 / tri)
 
             sum_v += p
-            sum_deg += deg2[u]
+            sum_deg += deg[u]
 
         sum_s.setdefault(v, sum_v)
         avg_sn.setdefault(v, sum_v * 1.0 / num_v)
         avg_dn.setdefault(v, sum_deg * 1.0 / (num_v + 1))
-    # print('begin loop')
+#    print('begin loop')
 
-    # oldinfo = 0
+#    oldinfo = 0
     info = 0
     t = 0
     while 1:
@@ -227,27 +200,27 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
 
                 Iu = list_I[u]
                 if Iu - Iv < 0:
-                    # It=It*1.0/E
+                    #                           It=It*1.0/E
                     It = 0
                 else:
                     It = (math.exp(Iu - Iv) - 1)
                 # It=It*1.0*deg[u]/(deg[v]+deg[u])
                 if It < 0.0001:
-                    It = 0
+                    It = 0  #
                 fuv = It
-                # print(fuv)
+                #                       print(fuv)
                 p = st[keys]
                 p1 = p * hop2v[keys]
-                Iin = p1 * fuv
+                Iin = p1 * fuv  #
                 Icost = avg_sn[v] * fuv * (1 - p) / avg_dn[v]
-                # Icost=avg_s*fuv*avg_c/avg_d
-                # Icost=(avg_sn[v])*fuv/avg_dn[v]
+                #                Icost=avg_s*fuv*avg_c/avg_d
+                #                Icost=(avg_sn[v])*fuv/avg_dn[v]
 
                 Iin = Iin - Icost
                 if Iin < 0:
                     Iin = 0
                 Iv = Iv + Iin
-                # print(v,u,Iin,Icost,Iv,Iu,It)
+                #                       print(v,u,Iin,Icost,Iv,Iu,It)
                 if Iin > Imax:
                     Imax = Iin
 
@@ -257,7 +230,7 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
             # print(v,u,Iin,Iv,Iu,tempu[0],pu,tempu[1],fuv)
             info += list_I[v]
         # if v==3:
-        # print(v,Iv)
+        #                print(v,Iv)
 
         if Imax < 0.0001:
             break
@@ -293,11 +266,11 @@ def CDID(Gsub, maxlabel):  # G_sub is a subgraph, run information dynamics on su
             # print (order)
             # print(community)
     order_value = [community[k] for k in sorted(community.keys())]
-    commu_num = len(set(order_value))  # number of communities
+    commu_num = len(set(order_value))   # number of communities
     endtime1 = datetime.datetime.now()
     print('Social division ends')
     print(list_I)
-    # print('community number:', commu_num)
+    #print('community number:', commu_num)
     print('alltime:', (endtime1 - starttime).seconds)
     return community
 
@@ -335,20 +308,24 @@ def drawcommunity(g, partition, filepath):
     pos = nx.spring_layout(g)
     count1 = 0
     t = 0
-
+    node_color = ['#66CCCC', '#FFCC00', '#99CC33', '#CC6600', '#CCCC66',
+                  '#FF99CC', '#66FFFF', '#66CC66', '#CCFFFF', '#CCCC00', '#CC99CC', '#FFFFCC']
+                  
+    print("partition")
+    print(partition)
     for com in set(partition.values()):
         count1 = count1 + 1.
-        list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
-        print(list_nodes)
+        list_nodes = [nodes for nodes in partition.keys()
+                      if partition[nodes] == com]
         r = lambda: random.randint(0,255)
         color = '#{:02x}{:02x}{:02x}'.format(r(), r(), r())
         nx.draw_networkx_nodes(g, pos, list_nodes, node_size=220,node_color=color)
         nx.draw_networkx_labels(g, pos)
         t = t+1
-    
-    labels = nx.get_edge_attributes(g,'weight')
-    nx.draw_networkx_labels(g,pos)
-    nx.draw_networkx_edges(g, pos,alpha=0.5)
+
+    labels = nx.get_edge_attributes(g, 'weight')
+    nx.draw_networkx_labels(g, pos)
+    nx.draw_networkx_edges(g, pos, alpha=0.5)
     plt.savefig(filepath)
     plt.show()
 
@@ -386,7 +363,7 @@ plt.savefig(fpath)
 plt.show()
 # print G.edges()
 # comm_file='switch.t01.comm'
-comm_file = '15node_comm_t04.txt'
+comm_file = '15node_comm_t01.txt'
 with open(path+comm_file, 'r') as f:
     comm_list = f.readlines()
     comm_list = str_to_int(comm_list)
@@ -438,7 +415,8 @@ for i in range(2, 5):
     for line in edge_list_new:
         temp = line.strip().split()
         G2.add_edge(int(temp[0]), int(temp[1]))
-    print('T'+str(i-1)+'time slice network G'+str(i-1) + '********************** ************************')
+    print('T'+str(i-1)+'time slice network G'+str(i-1) +
+          '********************** ************************')
     nx.draw_networkx(G2)
     fpath = 'DCDID1/data/pic/G_' + \
         str(i-1)+'.png'
@@ -468,11 +446,12 @@ for i in range(2, 5):
 # print len(edges_added), len(edges_removed)
     all_change_comm = set()
     #Add node processing ############################################## ################
-    addn_ch_comm, addn_pro_edges, addn_commu = node_addition(G2, nodes_added, comm)
+    addn_ch_comm, addn_pro_edges, addn_commu = node_addition(
+        G2, nodes_added, comm)
 # print ('addnode_community',addn_commu)
 # print edges_added
 # print addn_pro_edges
-    edges_added = edges_added-addn_pro_edges # remove processed edges
+    edges_added = edges_added-addn_pro_edges  # remove processed edges
 # print edges_added
     all_change_comm = all_change_comm | addn_ch_comm
 # print('addn_ch_comm',addn_ch_comm)
@@ -494,12 +473,13 @@ for i in range(2, 5):
     dele_ch_comm = edge_deletion(edges_removed, deln_commu)
     all_change_comm = all_change_comm | dele_ch_comm
 # print('all_change_comm',all_change_comm)
-    unchangecomm = () # Unchanged community tag
-    newcomm = {} # The format is {node:community}
-    newcomm = deln_commu # Add edges and delete edges, just process on existing nodes, no new nodes will be added, nodes will be deleted (previously processed)
+    unchangecomm = ()  # Unchanged community tag
+    newcomm = {}  # The format is {node:community}
+    # Add edges and delete edges, just process on existing nodes, no new nodes will be added, nodes will be deleted (previously processed)
+    newcomm = deln_commu
     unchangecomm = set(newcomm.values())-all_change_comm
     unchcommunity = {key: value for key, value in newcomm.items(
-    ) if value in unchangecomm} # unchanged community : tags and nodes
+    ) if value in unchangecomm}  # unchanged community : tags and nodes
     # Find the subgraph corresponding to the changed community, then use information dynamics on the subgraph to find the new community structure, add the unchanged community structure, and get the new community structure.
 # print('change community:',all_change_comm)
     Gtemp = nx.Graph()
@@ -508,7 +488,7 @@ for i in range(2, 5):
     if len(unchangecomm) > 0:
         unchagecom_maxlabe = max(unchangecomm)
 # print('subG', Gtemp.edges())
-    if Gtemp.number_of_edges() < 1: # community has not changed
+    if Gtemp.number_of_edges() < 1:  # community has not changed
         comm = newcomm
     else:
         getnewcomm = CDID(Gtemp, unchagecom_maxlabe)
@@ -525,7 +505,8 @@ for i in range(2, 5):
 # mergecomm=dict(unchcommunity, **getnewcomm )#The format is {node:community}
         d = dict(unchcommunity)
         d.update(getnewcomm)
-        comm = dict(d) # Take the currently obtained community structure as the next community input
+        # Take the currently obtained community structure as the next community input
+        comm = dict(d)
         print('T'+str(i-1)+'time slice network community structure C'+str(i-1) +
               '************************************************')
         drawcommunity(G2, comm, 'DCDID1/data/pic/community_'+str(i-1)+'.png')
