@@ -15,83 +15,94 @@ import math
 import matplotlib.pyplot as plt  # for drawing
 import random
 
-def str_to_int (x):
-    return [[int (v) for v in line.split ()] for line in x]
 
-def node_addition (G, addnodes, communitys): # Imported communities Company district format {node: company district name}
-    change_comm = set () # Can be unrestricted.
-    processed_edges = set () # Processed edge
-    
+def str_to_int(x):
+    return [[int(v) for v in line.split()] for line in x]
+
+
+# Imported communities Company district format {node: company district name}
+def node_addition(G, addnodes, communitys):
+    change_comm = set()  # Can be unrestricted.
+    processed_edges = set()  # Processed edge
+
     for u in addnodes:
-        neighbors_u = G.neighbors (u)
-        neig_comm = set () # Label of the company where you live
-        pc = set ()
+        neighbors_u = G.neighbors(u)
+        neig_comm = set()  # Label of the company where you live
+        pc = set()
         for v in neighbors_u:
-            neig_comm.add (communitys[v])
-            pc.add ((u, v))
-            pc.add ((v, u)) #undirected
-        if len (neig_comm)> 1: #Explanation Inside the company district where this joining point is absent
-           change_comm = change_comm | neig_comm
-           lab = max (communitys.values()) +1
-           communitys.setdefault (u, lab) #
-           change_comm.add (lab)
-        else: 
-            if len (neig_comm) == 1: # Explanation Concluding point Inside the company district, or connecting with one company district
-               communitys.setdefault (v, neig_comm [0])
-               processed_edges = processed_edges | pc
-            else: 
-               communitys.setdefault(v,max(communitys.values())+1)
-    
-    return change_comm, processed_edges, communitys # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
+            neig_comm.add(communitys[v])
+            pc.add((u, v))
+            pc.add((v, u))  # undirected
+        if len(neig_comm) > 1:  # Explanation Inside the company district where this joining point is absent
+            change_comm = change_comm | neig_comm
+            lab = max(communitys.values()) + 1
+            communitys.setdefault(u, lab)
+            change_comm.add(lab)
+        else:
+            if len(neig_comm) == 1:  # Explanation Concluding point Inside the company district, or connecting with one company district
+                communitys.setdefault(v, neig_comm[0])
+                processed_edges = processed_edges | pc
+            else:
+                communitys.setdefault(v, max(communitys.values())+1)
 
-def node_deletion (G, delnodes, communitys): #tested, correct
-    change_comm = set () # Can be unrestricted.
-    processed_edges = set () # Processed edge
+    # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
+    return change_comm, processed_edges, communitys
+
+
+def node_deletion(G, delnodes, communitys):  # tested, correct
+    change_comm = set()  # Can be unrestricted.
+    processed_edges = set()  # Processed edge
     for u in delnodes:
-        neighbors_u = G.neighbors (u)
-        neig_comm = set () # Label of the company where you live
+        neighbors_u = G.neighbors(u)
+        neig_comm = set()  # Label of the company where you live
         for v in neighbors_u:
-            neig_comm.add (communitys [v])
-            processed_edges.add ((u, v))
-            processed_edges.add ((v, u))
-        del communitys [u]
+            neig_comm.add(communitys[v])
+            processed_edges.add((u, v))
+            processed_edges.add((v, u))
+        del communitys[u]
         change_comm = change_comm | neig_comm
-    return change_comm, processed_edges,communitys # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
+    # Returnable development transformational company district, processing transitional Bien Hoa latest company district structure.
+    return change_comm, processed_edges, communitys
 
-def edge_addition (addedges, communitys): #Inside the company ward where you join the 边, the non-meeting company ward transformation
-    change_comm = set () # Can be unrestricted.
+
+# Inside the company ward where you join the 边, the non-meeting company ward transformation
+def edge_addition(addedges, communitys):
+    change_comm = set()  # Can be unrestricted.
 # print addedges
-#print communitys
+# print communitys
     for item in addedges:
-        neig_comm = set () # Label of the company where you live
-        neig_comm.add (communitys[item [0]]) # Judgment
-        neig_comm.add (communitys[item [1]])
-        if len (neig_comm)> 1: #Explanation Inside the company district where this member is absent
-           change_comm = change_comm | neig_comm
-    return change_comm # Returnable Develop transformational company district,
+        neig_comm = set()  # Label of the company where you live
+        neig_comm.add(communitys[item[0]])  # Judgment
+        neig_comm.add(communitys[item[1]])
+        if len(neig_comm) > 1:  # Explanation Inside the company district where this member is absent
+            change_comm = change_comm | neig_comm
+    return change_comm  # Returnable Develop transformational company district,
 
-def edge_deletion (deledges, communitys): #Deletion of the company district that can be used inside the company district
-    change_comm = set () # Can be unrestricted.
+
+# Deletion of the company district that can be used inside the company district
+def edge_deletion(deledges, communitys):
+    change_comm = set()  # Can be unrestricted.
     for item in deledges:
-        neig_comm = set () # Label of the company where you live
-        neig_comm.add (communitys[item [0]]) # Judgment
-        neig_comm.add (communitys[item [1]])
-        if len (neig_comm) == 1: #Explanation Inside the company district where this member is absent
-           change_comm = change_comm | neig_comm
-    return change_comm # Returnable
+        neig_comm = set()  # Label of the company where you live
+        neig_comm.add(communitys[item[0]])  # Judgment
+        neig_comm.add(communitys[item[1]])
+        if len(neig_comm) == 1:  # Explanation Inside the company district where this member is absent
+            change_comm = change_comm | neig_comm
+    return change_comm  # Returnable
 
-def getchangegraph (all_change_comm, newcomm, Gt):
-    Gte = nx.Graph ()
-    com_key = newcomm.keys ()
-    for v in Gt.nodes ():
-        if v not in com_key or newcomm [v] in all_change_comm:
-            Gte.add_node (v)
-            neig_v = Gt.neighbors (v)
+
+def getchangegraph(all_change_comm, newcomm, Gt):
+    Gte = nx.Graph()
+    com_key = newcomm.keys()
+    for v in Gt.nodes():
+        if v not in com_key or newcomm[v] in all_change_comm:
+            Gte.add_node(v)
+            neig_v = Gt.neighbors(v)
             for u in neig_v:
-               if u not in com_key or newcomm [u] in all_change_comm:
-                   Gte.add_edge (v, u)
-                   Gte.add_node (u)
-    
+                if u not in com_key or newcomm[u] in all_change_comm:
+                    Gte.add_edge(v, u)
+                    Gte.add_node(u)
+
     return Gte
 
 
@@ -310,16 +321,18 @@ def drawcommunity(g, partition, filepath):
     t = 0
     node_color = ['#66CCCC', '#FFCC00', '#99CC33', '#CC6600', '#CCCC66',
                   '#FF99CC', '#66FFFF', '#66CC66', '#CCFFFF', '#CCCC00', '#CC99CC', '#FFFFCC']
-                  
+
     print("partition")
     print(partition)
     for com in set(partition.values()):
         count1 = count1 + 1.
         list_nodes = [nodes for nodes in partition.keys()
                       if partition[nodes] == com]
-        r = lambda: random.randint(0,255)
+
+        def r(): return random.randint(0, 255)
         color = '#{:02x}{:02x}{:02x}'.format(r(), r(), r())
-        nx.draw_networkx_nodes(g, pos, list_nodes, node_size=220,node_color=color)
+        nx.draw_networkx_nodes(
+            g, pos, list_nodes, node_size=220, node_color=color)
         nx.draw_networkx_labels(g, pos)
         t = t+1
 
